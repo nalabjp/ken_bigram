@@ -7,8 +7,8 @@ module KenBigram
 
       private
 
-      def ngramize(word, n_gram)
-
+      def ngramize(word, size)
+        word.each_char.each_cons(size).map(&:join)
       end
     end
   end
