@@ -38,7 +38,7 @@ module KenBigram
     BIGRAMIZE_COLUMNS = [:prefecture, :city, :address].freeze
 
     # Errors
-    NotFoundCSV = Class.new(StandardError)
+    NotFoundFile = Class.new(StandardError)
 
     # Data source
     class Source < Struct.new(:index, :data)
@@ -57,6 +57,18 @@ module KenBigram
         #       パターンが色々ありそうなので気が向いたら。。。
         data[key].push(value)
       end
+
+      def fetch_multi(index_key)
+        index[index_key]&.map do |data_key|
+          format(data[data_key])
+        end
+      end
+
+      private
+
+      def format(list)
+        list.join(',')
+      end
     end
 
     class << self
@@ -66,10 +78,6 @@ module KenBigram
 
       def load
         new.load
-      end
-
-      def exist?
-        File.exist?(DataSource::SOURCE_PATH)
       end
     end
 
@@ -84,7 +92,10 @@ module KenBigram
     end
 
     def load
-
+      raise NotFoundFile, "Not found #{INDEX_FILE} or #{DATA_FILE}" unless exist_files?
+      clear
+      load_files
+      @source
     end
 
     private
@@ -124,7 +135,7 @@ module KenBigram
     end
 
     def verify!
-      raise NotFoundCSV, "Not found #{KEN_ALL_CSV_FILE}" unless File.exist?(KEN_ALL_CSV_FILE)
+      raise NotFoundFile, "Not found #{KEN_ALL_CSV_FILE}" unless File.exist?(KEN_ALL_CSV_FILE)
     end
 
     def unzip
@@ -149,7 +160,7 @@ module KenBigram
           end
         end
 
-        src.add_data(row[:zipcode], [row[:prefecture], row[:city], row[:address]])
+        src.add_data(row[:zipcode], [row[:zipcode], row[:prefecture], row[:city], row[:address]])
       end
     end
 
@@ -158,6 +169,13 @@ module KenBigram
       File.write(DATA_FILE, @source.data.to_yaml, mode: 'w')
     end
 
+    def load_files
+      @source.index = YAML.load_file(INDEX_FILE)
+      @source.data = YAML.load_file(DATA_FILE)
+    end
+
+    def exist_files?
+      File.exist?(INDEX_FILE) && File.exist?(DATA_FILE)
     end
   end
 end

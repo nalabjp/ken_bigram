@@ -7,19 +7,23 @@ module KenBigram
     end
 
     def find(word)
-      bigramize(word).map do |str|
-        fetch(str)
+      bigramize(remove_whitespace(word)).flat_map do |bigramized|
+        fetch(bigramized)
       end.compact
     end
 
     private
 
-    def bigramize(word)
+    def remove_whitespace(word)
+      word.gsub(/[[:space:]]/, '')
+    end
 
+    def bigramize(word)
+      Ngram.bigramize(word)
     end
 
     def fetch(word)
-      @source[str]
+      @source.fetch_multi(word)
     end
   end
 end
